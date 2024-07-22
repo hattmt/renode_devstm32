@@ -68,4 +68,4 @@ and call it in your stm32h7b0.repl :
     rtcPeripheral :true
 ```
 
-
+Warning : the parameters under the peripheral are the parameters of the class contructor
