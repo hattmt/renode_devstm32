@@ -2,6 +2,7 @@
 
 Use Renode for stm32s emulation,
 great tool which needs a lot of developpment but really promising ! 
+You can use it to virtually test all your code (and mmi screen frames ) in jenkins for exemple .
 
 Virtual debug on several boards , protocol sniffing, mmis screens emulation, buses (i2c/spi/canfd) , tests ,  ... : 
 
