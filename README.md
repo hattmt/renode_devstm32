@@ -10,10 +10,10 @@ Add files for emulation of stm32s (ARMCC /armclang (keil) / armgcc ):
 - stm32h7b0,stm32h750 with ltdc
 
 You need 2 main files :
-- a .resc file which describe the board that you use, components (ucs,leds, interconnections with buses ) , 
+- a .resc file which describe the board that you use, components (mcus ,leds, interconnections with buses ) , 
 which files (hex , elf ) are you using on your uc...
 
-- a .repl file that you call in your .resc file
+- a .repl file which you call in your .resc file, and it describe all your mcu
 
 
 Steps:
@@ -21,7 +21,7 @@ Steps:
 1) get renode last release:
 https://github.com/renode/renode
 
-2) Develop .repl script ( uc  description (peripheral and core) )
+2) Develop .repl script ( mcu  description (peripheral and core) )
    most of cores are already defined in renode ( cortex m0/+ , m4 ,m7..)
    A lot of peripherals like  gpios , integrated memories , nvic,exti , ustarts ,spis are already developped in renode.
    you just have to call them in your stmxxx.repl file
@@ -33,7 +33,7 @@ https://github.com/renode/renode
     nvic: nvic
 
 
-  Some peripharals are differents for each uc and you need to implement them 
+  Some peripharals are differents for each mcu and you need to implement them 
   
   Ex : 
   the stm32xxx RCC registers.
