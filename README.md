@@ -32,11 +32,11 @@ https://github.com/renode/renode
    you just have to call them in your stmxxx.repl file
 
   Ex : 
-  cpu: CPU.CortexM @ sysbus
+ ``` cpu: CPU.CortexM @ sysbus
     cpuType: "cortex-m7"
     numberOfMPURegions: 16
     nvic: nvic
-
+```
 
   Some peripharals are differents for each mcu and you need to implement them 
   
