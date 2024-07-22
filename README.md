@@ -40,7 +40,6 @@ https://github.com/renode/renode
    A lot of peripherals like  gpios , integrated memories , nvic,exti , ustarts ,spis are also already developped in renode.
    you just have to call them in your stmxxx.repl file (you can help yourself with renode installed folder , in "platforms/cpus" )
 
-  Ex : 
  ```
     cpu: CPU.CortexM @ sysbus
     cpuType: "cortex-m7"
@@ -49,9 +48,8 @@ https://github.com/renode/renode
 ```
 
   Some peripherals are differents for each mcu and you need to implement them 
-  
-  Ex : 
-  the stm32xxx RCC registers.
+
+  For exemple the stm32xxx RCC registers.
 
   for the stm32 rcc you must develop a Cs (C# file) with a class stm32xxx_rcc and you can call it directly from your  stmxxx.rep file.
   All you need to do is implement the mains rcc registers with the help of reference manual (or svd file)
