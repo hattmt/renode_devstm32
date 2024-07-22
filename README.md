@@ -1,5 +1,4 @@
-# renode_devstm32
-renode developpement
+# renode STM32 files development
 
 Use Renode for stm32 emulations , live debug, tests ... : 
 
