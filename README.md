@@ -65,7 +65,7 @@ and call it in your stm32h7b0.repl :
 
 ```
   rcc: Miscellaneous.STM32H7B0_RCC @ sysbus 0x58024400
-  rtcPeripheral :true
+    rtcPeripheral :true
 ```
 
 
