@@ -41,7 +41,8 @@ https://github.com/renode/renode
    you just have to call them in your stmxxx.repl file (you can help yourself with renode installed folder , in "platforms/cpus" )
 
   Ex : 
- ``` cpu: CPU.CortexM @ sysbus
+ ```
+    cpu: CPU.CortexM @ sysbus
     cpuType: "cortex-m7"
     numberOfMPURegions: 16
     nvic: nvic
