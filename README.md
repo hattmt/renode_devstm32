@@ -1,6 +1,9 @@
 # renode STM32 files development
 
-Use Renode for stm32 emulations , live debug, tests ... : 
+Use Renode for stm32s emulation,
+great tool which needs a lot of developpment but really promising ! 
+
+Virtual debug on several boards , protocol sniffing, mmis screens emulation, buses (i2c/spi/canfd) , tests ,  ... : 
 
 Add files for emulation of stm32s (ARMCC /armclang (keil) / armgcc ):
 
