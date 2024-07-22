@@ -52,7 +52,8 @@ https://github.com/renode/renode
   Ex : 
   the stm32xxx RCC registers.
 
-  for the stm32 rcc you must develop a Cs (C# file) with a class stm32xxx_rcc and you can call it directly from your  stmxxx.rep file
+  for the stm32 rcc you must develop a Cs (C# file) with a class stm32xxx_rcc and you can call it directly from your  stmxxx.rep file.
+  All you need to do is implement the main rcc registers with the help of reference manual (or svd file)
 
 Your stm32h7b0_rcc.cs file (you can go in renode-infrastructure repository to help youself https://github.com/renode/renode-infrastructure/tree/master/src/Emulator/Peripherals/Peripherals ) :
 ![image](https://github.com/user-attachments/assets/b69768b9-6db5-46e1-bb7b-dbe0c8c65448)
