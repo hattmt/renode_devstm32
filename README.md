@@ -12,8 +12,9 @@ This repo add files with samples for emulation of these stm32s mcus :
 - stm32g0b1
 - stm32h7b0,stm32h750 with ltdc for mmis
 
-You can directly load a file (.hex or .elf on it ) and debug with armgcc and vscode
-for armclang (keil), I nedded to set the PC, SP and VectorTableOffset in my resc file after the file load.
+You can directly load a file (.hex or .elf on it ) and debug with armgcc and vscode .
+
+For armclang (keil), I nedded to set the PC, SP and VectorTableOffset in my resc file after the file load.
 
   (ARMCC /armclang (keil) / armgcc )
 
