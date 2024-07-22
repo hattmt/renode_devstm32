@@ -6,7 +6,7 @@ You can use it to virtually test all your code (and mmi screen frames ) in jenki
 
 Virtual debug on several boards , protocol sniffing, mmis screens emulation, buses (i2c/spi/canfd) , tests ,  ... : 
 
-This repo add files for emulation of these stm32s :
+This repo add files with samples for emulation of these stm32s mcus :
 
 - stm32g474 
 - stm32g0b1
@@ -47,7 +47,7 @@ https://github.com/renode/renode
     nvic: nvic
 ```
 
-  Some peripharals are differents for each mcu and you need to implement them 
+  Some peripherals are differents for each mcu and you need to implement them 
   
   Ex : 
   the stm32xxx RCC registers.
