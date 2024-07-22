@@ -5,11 +5,14 @@ great tool which needs a lot of developpment but really promising !
 
 Virtual debug on several boards , protocol sniffing, mmis screens emulation, buses (i2c/spi/canfd) , tests ,  ... : 
 
-Add files for emulation of stm32s (ARMCC /armclang (keil) / armgcc ):
+This repo add files for emulation of these stm32s (ARMCC /armclang (keil) / armgcc ):
 
 - stm32g474 
 - stm32g0b1
 - stm32h7b0,stm32h750 with ltdc
+
+  You can contribute and reuse the code for your own usage .
+  It would be great to push this in official renode repository to contribute to its developement .
 
 You need 2 main files :
 - a .resc file which describe the board that you use, components (mcus ,leds, interconnections with buses ) , 
