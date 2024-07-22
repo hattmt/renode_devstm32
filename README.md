@@ -10,7 +10,7 @@ This repo add files for emulation of these stm32s :
 
 - stm32g474 
 - stm32g0b1
-- stm32h7b0,stm32h750 with ltdc
+- stm32h7b0,stm32h750 with ltdc for mmis
 
 You can directly load a file (.hex or .elf on it ) and debug with armgcc and vscode
 for armclang (keil), I nedded to set the PC, SP and VectorTableOffset in my resc file after the file load.
