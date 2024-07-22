@@ -31,7 +31,9 @@ Steps:
 1) get renode last release:
 https://github.com/renode/renode
 
-2) Develop .repl script ( mcu  description (peripheral and core) )
+2) read the doc and follow the first exemple here : https://renode.readthedocs.io/en/latest/introduction/demo.html
+
+4) Develop .repl script ( mcu  description (peripheral and core) )
    most of cores are already defined in renode ( cortex m0/+ , m4 ,m7..)
    A lot of peripherals like  gpios , integrated memories , nvic,exti , ustarts ,spis are already developped in renode.
    you just have to call them in your stmxxx.repl file
