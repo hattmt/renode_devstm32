@@ -57,7 +57,7 @@ https://github.com/renode/renode
 Your stm32h7b0_rcc.cs file (you can go in renode-infrastructure repository to help youself https://github.com/renode/renode-infrastructure/tree/master/src/Emulator/Peripherals/Peripherals ) :
 ![image](https://github.com/user-attachments/assets/b69768b9-6db5-46e1-bb7b-dbe0c8c65448)
 
-import the class in your .resc file : ```i @stm32h7b0_rcc.cs```
+import the .cs file with your class in your .resc file : ```i @stm32h7b0_rcc.cs```
 
 
 and call it in your stm32h7b0.repl :
