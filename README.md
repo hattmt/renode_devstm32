@@ -5,9 +5,9 @@ Use Renode for stm32 emulations , live debug, tests ... :
 
 Add files for emulation of stm32s (ARMCC /armclang (keil) / armgcc ):
 
--> stm32g474 
--> stm32g0b1
--> stm32h7b0,stm32h750 with ltdc
+- stm32g474 
+- stm32g0b1
+- stm32h7b0,stm32h750 with ltdc
 
 You need 2 main files :
 - a .resc file which describe the board that you use, components (ucs,leds, interconnections with buses ) , 
