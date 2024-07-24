@@ -1,6 +1,6 @@
 
 
-ltdc: Video.STM32LTDC @ sysbus 0x50001000
+ltdc: Video.STM32LTDC_STM32H7 @ sysbus 0x50001000
     -> nvic@88
 
 dma2d: DMA.STM32DMA2D @ sysbus 0x52001000
@@ -297,7 +297,7 @@ otfdec: Python.PythonPeripheral @ sysbus 0x5200B800
     script: '''
 
 if request.isRead:
-    key = 139 
+    key = 139 # crc de la cle OTFDEC
     if request.offset == 0x20: #region 1
         request.value = ( key << 8 )
     if request.offset == 0x50: #region 2
