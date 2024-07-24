@@ -297,7 +297,7 @@ otfdec: Python.PythonPeripheral @ sysbus 0x5200B800
     script: '''
 
 if request.isRead:
-    key = 139 # crc de la cle OTFDEC (GYS_CLE_AES_HATT avec SWAP AES) -> charger la flash avec les données non chiffrees pour la simu (elf)
+    key = 139 
     if request.offset == 0x20: #region 1
         request.value = ( key << 8 )
     if request.offset == 0x50: #region 2
