@@ -142,8 +142,20 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
                     .WithValueField(24, 7, name: "DIVR3")
                     .WithReservedBits( 31, 1 )
                 },
-
-
+                {(long)Registers.RCC_BDCR, new DoubleWordRegister(this)//PLLCFGR
+                    .WithValueField(0, 1, out var lseon, name: "LSEON")
+                    .WithValueField(1, 1,FieldMode.Read, valueProviderCallback: _ => lseon.Value, name: "LSERDY")
+                    .WithValueField(2, 1, name: "LSEBYP")
+                    .WithValueField(3, 2, name:"LSEDRV")
+                    .WithValueField(5, 1, name:"LSECSSON")
+                    .WithValueField(6, 1, name:"LSECSSD")
+                    .WithValueField(7, 1, name:"LSEEXT")
+                    .WithValueField(8, 2, name:"RTCSEL")
+                    .WithReservedBits(10, 5 )
+                    .WithValueField( 15, 1, name: "RTCEN")
+                    .WithValueField( 16, 1, name: "VSWRST")
+                    .WithReservedBits( 17, 5 )
+                },
 
 
                 // Add other registers here following the same pattern
@@ -184,7 +196,9 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
 
             RCC_PLL1DIVR = 0x030,
             RCC_PLL2DIVR = 0x038,
-            RCC_PLL3DIVR = 0x040
+            RCC_PLL3DIVR = 0x040,
+
+            RCC_BDCR = 0x070 // RCC Backup domain control register
 
         }
     }
