@@ -8,9 +8,11 @@ Virtual debug on several boards , protocol sniffing, mmis screens emulation, bus
 
 This repo add files with samples for emulation of these stm32s mcus :
 
-- stm32g474 
+- stm32l474
+- stm32g474 ( HRTIM simulated ) 
 - stm32g0b1
-- stm32h7b0,stm32h750 with ltdc for mmis
+- stm32h7b0 ( RCC for the moment )
+- stm32h750 
 
 You can directly load a file (.hex or .elf on it ) and debug with armgcc and vscode .
 
