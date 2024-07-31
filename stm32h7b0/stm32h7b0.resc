@@ -1,0 +1,45 @@
+:name: STM32H7B0
+:description: This script runs Dartino on STM32F7 Discovery.
+
+using sysbus
+$name?="STM32H7B0"
+mach create $name
+
+emulation CreateCANHub "canHub"
+
+
+i @stm32h7b0_rcc.cs
+i @STM32G474_ADC.cs
+i @STM32LTDC_STM32H7.cs
+i @STM32H7_SPI.cs
+i @Micron_MT25Q.cs
+
+machine LoadPlatformDescription @stm32h7b0.repl
+connector Connect sysbus.fdcan1 canHub
+
+:sysbus LoadHEX
+
+showAnalyzer sysbus.uart7
+
+ltdc FramesPerVirtualSecond 100
+showAnalyzer ltdc
+
+sysbus.gpiod OnGPIO 5 True
+sysbus.gpiod OnGPIO 8 True
+
+sysbus.cpu ShouldEnterDebugMode true
+
+logLevel 1
+
+:a appeler qu une fois les .hex chargés
+set flash_sp `sysbus ReadDoubleWord 0x08000000`
+set flash_pc `sysbus ReadDoubleWord 0x08000004`
+cpu SP $flash_sp
+cpu PC $flash_pc
+
+:sysbus.cpu LogFunctionNames true
+
+machine StartGdbServer  3333 True
+
+
+

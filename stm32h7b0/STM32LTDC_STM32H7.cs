@@ -137,6 +137,22 @@ namespace Antmicro.Renode.Peripherals.Video
                 { (long)Register.ActiveWidthConfigurationRegister, activeWidthConfigurationRegister },
                 { (long)Register.BackgroundColorConfigurationRegister, backgroundColorConfigurationRegister },
                 { (long)Register.InterruptEnableRegister, interruptEnableRegister },
+                { (long)Register.LTDC_GCR, new DoubleWordRegister(this)
+                    .WithValueField(0, 1, name: "LTDCEN")
+                    .WithReservedBits(1, 3)
+                    .WithValueField(4, 3, name: "DBW")
+                    .WithReservedBits(7, 1)
+                    .WithValueField(8, 3, name: "DGW")
+                    .WithReservedBits(11, 1)
+                    .WithValueField(12, 3, name: "DRW")
+                    .WithReservedBits(15, 1)
+                    .WithValueField(16, 1, name: "DEN")
+                    .WithReservedBits(17, 11)
+                    .WithValueField(28, 1, name: "PCPOL")
+                    .WithValueField(29, 1, name: "DEPOL")
+                    .WithValueField(30, 1, name: "VSPOL")
+                    .WithValueField(31, 1, name: "HSPOL")
+                },
                 { (long)Register.LTDC_ISR, new DoubleWordRegister(this)
                     .WithValueField(0, 1, name: "LIF")
                     .WithValueField(1, 1, name: "FUIF")
@@ -312,6 +328,7 @@ namespace Antmicro.Renode.Peripherals.Video
         {
             BackPorchConfigurationRegister = 0x0C,
             ActiveWidthConfigurationRegister = 0x10,
+            LTDC_GCR = 0x18,
             LTDC_SRCR = 0x024,
             BackgroundColorConfigurationRegister = 0x2C,
             InterruptEnableRegister = 0x34,

@@ -22,8 +22,8 @@ cpu: CPU.CortexM @ sysbus
 
 nvic: IRQControllers.NVIC @ sysbus 0xE000E000
     systickFrequency: 280_000_000
-    priorityMask: 0xF0
     -> cpu@0
+    priorityMask: 0xF0
 
 syscfg: Miscellaneous.STM32_SYSCFG @ sysbus 0x58000400
     [0-15] -> exti@[0-15]
@@ -117,41 +117,28 @@ adc2: Analog.STM32G474_ADC @ sysbus 0x40022100
     -> nvic@18
 
 
-flash0: Memory.MappedMemory @ sysbus 0x80000000
-    size: 0x10000000
+flash0: Memory.MappedMemory @ sysbus 0x08000000
+    size: 0x00020000
 
-flash1: Memory.MappedMemory @ sysbus 0x08000000
-    size: 0x200000
+flash1: Memory.MappedMemory @ sysbus 0x90000000
+    size: 0x1000000
 
 ram: Memory.MappedMemory @ sysbus 0x1FF00000
     size: 0x20000
 
-itcm: Memory.MappedMemory @ sysbus 0x00000000
-    size: 0x10000
+sram1: Memory.MappedMemory @ sysbus 0x20000000
+    size: 0x00020000
 
-dtcm: Memory.MappedMemory @ sysbus 0x20000000
-    size: 0x20000
+sram2: Memory.MappedMemory @ sysbus 0x24000000
+    size: 0x00080000
 
-sram0: Memory.MappedMemory @ sysbus 0x24000000
-    size: 0x40000
+sram3: Memory.MappedMemory @ sysbus 0x24080000
+    size: 0x00080000
 
-sram1: Memory.MappedMemory @ sysbus 0x24040000
-    size: 0x60000
-
-sram2: Memory.MappedMemory @ sysbus 0x240a0000
-    size: 0x60000
-
-sram3: Memory.MappedMemory @ sysbus 0x30000000
-    size: 0x10000
-
-sram4: Memory.MappedMemory @ sysbus 0x30010000
-    size: 0x10000
-
-sram5: Memory.MappedMemory @ sysbus 0x38000000
-    size: 0x8000
 
 
 gpioa: GPIOPort.STM32_GPIOPort @ sysbus <0x58020000, +0x400>
+    4 -> flashSpi@0
 
 gpiob: GPIOPort.STM32_GPIOPort @ sysbus <0x58020400, +0x400>
 
@@ -185,11 +172,7 @@ pwrdpb: Python.PythonPeripheral @ sysbus 0x58024800
     //  Bit 13 - D3CR.VOSRDY
     script: "request.value = 1 << 8"
 
-extmemory2: Memory.MappedMemory @ sysbus 0x70000000
-    size: 0x10000000
 
-extmemory: Memory.MappedMemory @ sysbus 0x90000000
-    size: 0x10000000
 
 hsem: Miscellaneous.STM32H7_HardwareSemaphore @ sysbus 0x58026400
 
@@ -241,13 +224,19 @@ rcc: Miscellaneous.STM32H7B0_RCC @ sysbus 0x58024400
 crc: CRC.STM32F0_CRC @ sysbus 0x40023000
     configurablePoly: true
 
+/*spi_mux3: SPI.SPIMultiplexer @ spi3
+    init: { SetActiveLow 0; SetActiveLow 1 }*/
 
 
-spi3: SPI.STM32H7_SPI @ sysbus 0x40003C00
+spi3: SPI.STM32H7_SPI_ @ sysbus 0x40003C00
     IRQ->nvic@51
-    DMARecieve -> dma2@4
 
 
+flashSpi: SPI.Micron_MT25Q_ @ spi3
+    underlyingMemory: extFlash1_mem
+
+extFlash1_mem: Memory.MappedMemory
+    size: 0x008000000
 
 fdcan1: CAN.MCAN @ sysbus 0x4000A000
     messageRAM: canMessageRAM
@@ -320,8 +309,7 @@ if request.isRead:
         request.value = ( 0x1 << 31 )
 '''
 
-/*sysbus:
+sysbus:
     init:
-        ApplySVD STM32H7B0.svd*/
-        /*Tag <0x40080000, 0x400BFFFF> "USB2_OTG_FS:RESET" 0x80000000*/
-        /*Tag <0x40040000, 0x4007FFFF> "USB1_OTG_HS:RESET" 0x80000000*/
+        Tag <0x40080000, 0x400BFFFF> "USB2_OTG_FS:RESET" 0x80000000
+        Tag <0x40040000, 0x4007FFFF> "USB1_OTG_HS:RESET" 0x80000000
