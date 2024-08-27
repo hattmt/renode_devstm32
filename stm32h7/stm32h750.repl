@@ -1,0 +1,83 @@
+//Memories
+flashController: MTD.STM32H7_FlashController @ sysbus 0x52002000
+    flash1: flash0
+    flash2: flash1
+
+flash0: Memory.MappedMemory @ sysbus 0x08000000
+    size: 0x00020000
+
+flash1: Memory.MappedMemory @ sysbus 0x90000000
+    size: 0x10000000
+
+sram1: Memory.MappedMemory @ sysbus 0x30000000
+    size: 0x00048000
+
+sram2: Memory.MappedMemory @ sysbus 0x38000000
+    size: 0x00010000
+
+iram3: Memory.MappedMemory @ sysbus 0x24000000
+    size: 0x00080000
+
+fmc_ram: Memory.MappedMemory @ sysbus 0xC0000000
+    size: 0x02000000
+
+
+
+crc: CRC.STM32_CRC @ sysbus 0x58024C00
+    series : STM32Series.F4
+    configurablePoly: true
+
+
+
+/*Simu Python de l'USB*/
+usb1_otg_hs: Python.PythonPeripheral @ sysbus 0x40040000
+    size: 0x400
+    initable: true
+    script: '''
+
+if request.isRead:
+    if request.offset == 0x10:
+        request.value = ( 0x1 << 31 )
+'''
+
+usb1_otg_fs: Python.PythonPeripheral @ sysbus 0x40080000
+    size: 0x400
+    initable: true
+    script: '''
+
+if request.isRead:
+    if request.offset == 0x10:
+        request.value = ( 0x1 << 31 )
+'''
+
+
+/*Simu Python de l'QSPI (la flash externe mappee directe)*/
+qspi: Python.PythonPeripheral @ sysbus 0x52005000
+    size: 0x1000
+    initable: true
+    script: '''
+if request.isInit:
+   lastVal = 0
+   data = {'tc': 1, 'tf': 1 ,'other':0}
+   id = [0x18, 0xBA, 0x20]
+   idx = 2
+
+if request.isWrite:
+    if request.offset == 0x0:
+        # HSION [doc = "Bit 0 - HSI16 clock enable"]
+        data['other'] = (request.value >> 0) & 0x1
+    elif request.offset == 0x20:
+        data['tf'] = (request.value >> 3) & 0x1
+        data['tc'] = (request.value >> 1) & 0x1
+elif request.isRead:
+    if request.offset == 0x0:
+        request.value = ( 0x1 |  0x3 << 28 )
+    elif request.offset == 0x8:
+        request.value = 0X1 << 3 | 0X1 << 2 | 0X1 << 1
+    elif request.offset == 0x10:
+        request.value = 0X02
+    elif request.offset == 0x20:
+        request.value = id[idx]
+        if idx > 0 :
+            idx -= 1
+'''

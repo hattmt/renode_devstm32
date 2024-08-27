@@ -1,5 +1,13 @@
+// Derived from 1.15.0 STM32H7_SPI.cs
 //
-// Copyright (c) 2010-2024 Antmicro
+// Fix typo in DMAReceive naming
+// Add DMATransmit and transmitDMAEnabled
+// Do not always call peripheral TransmissionFinished() at the end of a transfer
+// Track "unhandled" Configuration2 fields to avoid Warnings and return state if read
+//
+// Original assignment:
+//
+// Copyright (c) 2010-2023 Antmicro
 //
 // This file is licensed under the MIT License.
 // Full license text is available in 'licenses/MIT.txt'.
@@ -16,13 +24,14 @@ using Antmicro.Renode.Utilities.Collections;
 
 namespace Antmicro.Renode.Peripherals.SPI
 {
-    public class STM32H7_SPI_ : NullRegistrationPointPeripheralContainer<ISPIPeripheral>, IKnownSize, IDoubleWordPeripheral, IWordPeripheral, IBytePeripheral
+    public class STM32H7_SPI_Fixed : NullRegistrationPointPeripheralContainer<ISPIPeripheral>, IKnownSize, IDoubleWordPeripheral, IWordPeripheral, IBytePeripheral
     {
-        public STM32H7_SPI_(IMachine machine) : base(machine)
+        public STM32H7_SPI_Fixed(Machine machine) : base(machine)
         {
             registers = new DoubleWordRegisterCollection(this);
             IRQ = new GPIO();
-            DMARecieve = new GPIO();
+            DMAReceive = new GPIO();
+            DMATransmit = new GPIO();
 
             transmitFifo = new Queue<uint>();
             receiveFifo = new Queue<uint>();
@@ -34,7 +43,8 @@ namespace Antmicro.Renode.Peripherals.SPI
         public override void Reset()
         {
             IRQ.Unset();
-            DMARecieve.Unset();
+            DMAReceive.Unset();
+            DMATransmit.Unset();
             iolockValue = false;
             transmittedPackets = 0;
             transmitFifo.Clear();
@@ -43,7 +53,7 @@ namespace Antmicro.Renode.Peripherals.SPI
         }
 
         // We can't use AllowedTranslations because then WriteByte/WriteWord will trigger
-        // an additional read (see ReadWriteExtensions:WriteByteUsingDoubleWord).
+        // an additional read (see ReadWriteExtensions:WriteByteUsingDword).
         // We can't have this happenning for the data register.
         public byte ReadByte(long offset)
         {
@@ -67,13 +77,17 @@ namespace Antmicro.Renode.Peripherals.SPI
 
         public uint ReadDoubleWord(long offset)
         {
-            return registers.Read(offset);
+            //return registers.Read(offset);
+            uint value = registers.Read(offset);
+            //this.Log(LogLevel.Debug, "ReadDoubleWord:  0x{0:X} value 0x{1:X}", offset, value);
+            return value;
         }
 
         public void WriteDoubleWord(long offset, uint value)
         {
             if(CanWriteToRegister((Registers)offset, value))
             {
+                this.Log(LogLevel.Debug, "WriteDoubleWord: 0x{0:X} rval 0x{1:X}", offset, value);
                 registers.Write(offset, value);
             }
         }
@@ -81,22 +95,25 @@ namespace Antmicro.Renode.Peripherals.SPI
         public long Size => 0x400;
 
         public GPIO IRQ { get; }
-        public GPIO DMARecieve { get; }
+        public GPIO DMAReceive { get; }
+        public GPIO DMATransmit { get; }
 
         protected virtual bool IsWba { get; } = false;
 
         private void DefineRegisters()
         {
             Registers.Control1.Define(registers)
-                .WithFlag(0, out peripheralEnabled,FieldMode.Read | FieldMode.Set, name: "SPE", changeCallback: (_, value) =>
+                .WithFlag(0, out peripheralEnabled, name: "SPE", changeCallback: (_, value) =>
                     {
+                        this.Log(LogLevel.Debug, "Registers.Control1:SPE: value {0}", value);
                         if(value)
                         {
                             TryTransmitData();
                         }
                         else
                         {
-                            //ResetTransmissionState();
+                            this.Log(LogLevel.Debug, "Registers.Control1:SPI:false: calling ResetTransmissionState()");
+                            ResetTransmissionState();
                             transmitFifo.Clear();
                             receiveFifo.Clear();
                             transmissionSize.Value = 0;
@@ -112,20 +129,9 @@ namespace Antmicro.Renode.Peripherals.SPI
                             TryTransmitData();
                         }
                     })
-                .WithFlag(10, FieldMode.Set, name: "CSUSP", writeCallback: (_, value) =>
-                    {
-                        if(value)
-                        {
-                            if(!endOfTransfer.Value)
-                            {
-                                EndTransfer();
-                            }
-                            suspensionStatus.Value = true;
-                            UpdateInterrupts();
-                        }
-                    })
+                .WithTaggedFlag("CSUSP", 10)
                 .WithTaggedFlag("HDDIR", 11)
-                .WithTaggedFlag("SSI", 12)
+                .WithFlag(12, name: "SSI")
                 .WithTaggedFlag("CRC33_17", 13)
                 .WithTaggedFlag("RCRCINI", 14)
                 .WithTaggedFlag("TCRCINI", 15)
@@ -149,7 +155,7 @@ namespace Antmicro.Renode.Peripherals.SPI
 
             Registers.Configuration1.Define(registers)
                 .WithValueField(0, 5, out packetSizeBits, name: "DSIZE")
-                .WithValueField(5, 4, name:"FTHLV")
+                .WithValueField(5,4, name: "FTHLV")
                 .If(IsWba)
                     .Then(r => r
                         .WithTaggedFlag("UDRCFG", 9)
@@ -158,14 +164,13 @@ namespace Antmicro.Renode.Peripherals.SPI
                         .WithTag("UDRCFG", 9, 2)
                         .WithTag("UDRDET", 11, 2))
                 .WithReservedBits(13, 1)
-                .WithFlag(14, out receiveDMAEnabled, name: "RXDMAEN")
-                // Software expects this value to be as it was set. Transmitting with DMA doesn't require any special logic
-                .WithFlag(15, name: "TXDMAEN")
+                .WithFlag(14, out receiveDMAEnabled,FieldMode.Read | FieldMode.Set,name: "RXDMAEN")
+                .WithFlag(15, out transmitDMAEnabled,FieldMode.Read | FieldMode.Set, name: "TXDMAEN")
                 .WithTag("CRCSIZE", 16, 5)
                 .WithReservedBits(21, 1)
                 .WithTaggedFlag("CRCEN", 22)
                 .WithReservedBits(23, 5)
-                .WithTag("MBR", 28, 3)
+                .WithValueField(28, 3, name: "MBR")
                 .If(IsWba)
                     .Then(r => r.WithTaggedFlag("BPASS", 31))
                     .Else(r => r.WithReservedBits(31, 1));
@@ -192,14 +197,14 @@ namespace Antmicro.Renode.Peripherals.SPI
                         }
                     })
                 .WithFlag(23, out leastSignificantByteFirst, name: "LSBFRST")
-                .WithTaggedFlag("CPHA", 24)
-                .WithTaggedFlag("CPOL", 25)
-                .WithTaggedFlag("SSM", 26)
+                .WithFlag(24, name: "CPHA")
+                .WithFlag(25, name: "CPOL")
+                .WithFlag(26, out softwareManagement, name: "SSM")
                 .WithReservedBits(27, 1)
                 .WithTaggedFlag("SSIOP", 28)
                 .WithTaggedFlag("SSOE", 29)
                 .WithTaggedFlag("SSOM", 30)
-                .WithTaggedFlag("AFCNTR", 31);
+                .WithFlag(31, name: "AFCNTR");
 
             Registers.InterruptEnable.Define(registers)
                 .WithFlag(0, out receiveFifoThresholdInterruptEnable, name: "RXPIE")
@@ -207,11 +212,11 @@ namespace Antmicro.Renode.Peripherals.SPI
                 .WithTaggedFlag("DXPIE", 2)
                 .WithFlag(3, out endOfTransferInterruptEnable, name: "EOTIE")
                 .WithTaggedFlag("TXTFIE", 4)
-                .WithTaggedFlag("UDRIE", 5)
-                .WithTaggedFlag("OVRIE", 6)
-                .WithTaggedFlag("CRCEIE", 7)
-                .WithTaggedFlag("TIFREIE", 8)
-                .WithTaggedFlag("MODFIE", 9)
+                .WithFlag(5, name: "UDRIE")
+                .WithFlag(6, name: "OVRIE")
+                .WithFlag(7, name: "CRCEIE")
+                .WithFlag(8, name: "TIFREIE")
+                .WithFlag(9, name: "MODFIE")
                 .If(IsWba)
                     .Then(r => r.WithReservedBits(10, 1))
                     .Else(r => r.WithTaggedFlag("TSERFIE", 10))
@@ -219,12 +224,16 @@ namespace Antmicro.Renode.Peripherals.SPI
                 .WithWriteCallback((_, __) =>
                 {
                     UpdateInterrupts();
+                    // We clear EOT here to be compatible with the Zephyr driver: it
+                    // waits for EOT to become *0* instead of 1 like the HAL does.
+                    // See https://github.com/zephyrproject-rtos/zephyr/blob/a8ed28ab6fc86/drivers/spi/spi_ll_stm32.h#L180
+                    //endOfTransfer.Value = false;
                 });
 
             Registers.Status.Define(registers)
                 .WithFlag(0, FieldMode.Read, name: "RXP", valueProviderCallback: _ => receiveFifo.Count > 0)
                 // We always report that there is space for additional packets
-                .WithFlag(1, FieldMode.Read | FieldMode.Write, name: "TXP", valueProviderCallback: _ => transmissionSize.Value > 0 )
+                .WithFlag(1, FieldMode.Read, name: "TXP", valueProviderCallback: _ => true)
                 // This flag is equal to RXP && TXP. Since TXP is always true this flag is equal to RXP
                 .WithFlag(2, FieldMode.Read, name: "DXP", valueProviderCallback: _ => receiveFifo.Count > 0)
                 .WithFlag(3, out endOfTransfer, FieldMode.Read, name: "EOT")
@@ -238,47 +247,52 @@ namespace Antmicro.Renode.Peripherals.SPI
                 .If(IsWba)
                     .Then(r => r.WithReservedBits(10, 1))
                     .Else(r => r.WithTaggedFlag("TSERF", 10))
-                .WithFlag(11, out suspensionStatus, FieldMode.Read, name: "SUSP")
+                .WithTaggedFlag("SUSP", 11)
                 .WithFlag(12, FieldMode.Read, name: "TXC",
                     valueProviderCallback: _ => transmissionSize.Value == 0 ? transmitFifo.Count == 0 : endOfTransfer.Value)
                 .WithValueField(13, 2, name: "RXPLVL",valueProviderCallback: _ =>    {
-                                return (ulong)receiveFifo.Count%2;
+                                if((ulong)receiveFifo.Count <=  3 )
+                                    return (ulong)receiveFifo.Count;
+                                else
+                                    return 0;
                     })
-                .WithTaggedFlag("RXWNE", 15)
+                .WithValueField(15, 1, name: "RXWNE",valueProviderCallback: _ =>    {
+                                if((ulong)receiveFifo.Count > 3)
+                                    return 1;
+                                else
+                                    return 0;
+                    })
                 .WithValueField(16, 16, FieldMode.Read, name: "CTSIZE", valueProviderCallback: _ => transmissionSize.Value - transmittedPackets);
 
             Registers.InterruptStatusFlagsClear.Define(registers)
-                .WithReservedBits(0, 3)
+                //.WithReservedBits(0, 3)
+                .WithValueField(0, 3, FieldMode.WriteOneToClear, name: "RSVD0_3")
                 .WithFlag(3, FieldMode.Write, name: "EOTC", writeCallback: (_, value) =>
                     {
                         if(value)
                         {
+                            this.Log(LogLevel.Debug, "Registers.InterruptStatusFlagsClear: EOTC: calling ResetTransmissionState()");
                             ResetTransmissionState();
                         }
                     })
-                .WithTaggedFlag("TXTFC", 4)
-                .WithTaggedFlag("UDRC", 5)
-                .WithTaggedFlag("OVRC", 6)
-                .WithTaggedFlag("CRCEC", 7)
-                .WithTaggedFlag("TIFREC", 8)
-                .WithTaggedFlag("MODFC", 9)
+                .WithFlag(4, FieldMode.WriteOneToClear, name: "TXTFC")
+                .WithFlag(5, FieldMode.WriteOneToClear, name: "UDRC")
+                .WithFlag(6, FieldMode.WriteOneToClear, name: "OVRC")
+                .WithFlag(7, FieldMode.WriteOneToClear, name: "CRCEC")
+                .WithFlag(8, FieldMode.WriteOneToClear, name: "TIFREC")
+                .WithFlag(9, FieldMode.WriteOneToClear, name: "MODFC")
                 .If(IsWba)
-                    .Then(r => r.WithReservedBits(10, 1))
-                    .Else(r => r.WithTaggedFlag("TSERFC", 10))
-                .WithFlag(11, name: "SUSPC", writeCallback: (_, value) =>
-                    {
-                        if(value)
-                        {
-                            suspensionStatus.Value = false;
-                        }
-                    })
-                .WithReservedBits(12, 20);
+                    .Then(r => r.WithFlag(10, FieldMode.WriteOneToClear, name: "RSVD10"))
+                    .Else(r => r.WithFlag(10, FieldMode.WriteOneToClear, name: "TSERFC"))
+                .WithFlag(11, FieldMode.WriteOneToClear, name: "SUSPC")
+                //.WithReservedBits(12, 20);
+                .WithValueField(12, 20,  FieldMode.WriteOneToClear, name: "RSVD12_20");
 
             Registers.TransmitData.Define(registers)
                 .WithValueField(0, 32, FieldMode.Write, name: "SPI_TXDR", writeCallback: (_, value) =>
                     {
+                        this.Log(LogLevel.Debug, "Registers.TransmitData:TXDR: value 0x{0:X}", value);
                         transmitFifo.Enqueue((uint)value);
-                        this.Log(LogLevel.Error, "send data {0}",transmitFifo.Count);
                         TryTransmitData();
                     });
 
@@ -290,6 +304,7 @@ namespace Antmicro.Renode.Peripherals.SPI
                             this.Log(LogLevel.Error, "Receive data FIFO is empty. Returning 0");
                             return 0;
                         }
+                        this.Log(LogLevel.Debug, "Registers.ReceiveData:RXDR: value 0x{0:X}", value);
                         UpdateInterrupts();
                         return value;
                     });
@@ -324,6 +339,7 @@ namespace Antmicro.Renode.Peripherals.SPI
 
         private bool CanWriteToRegister(Registers reg, uint value)
         {
+            this.Log(LogLevel.Debug, "CanWriteToRegister: reg {0} value 0x{1:X} peripheralEnabled {2}", reg, value, peripheralEnabled.Value);
             if(peripheralEnabled.Value)
             {
                 switch(reg)
@@ -333,7 +349,8 @@ namespace Antmicro.Renode.Peripherals.SPI
                     case Registers.CRCPolynomial:
                     case Registers.UnderrunData:
                         this.Log(LogLevel.Error, "Attempted to write 0x{0:X} to {0} register while peripheral is enabled", value, reg);
-                        return false;
+                        ResetTransmissionState();
+                        return true;
                 }
             }
 
@@ -342,17 +359,21 @@ namespace Antmicro.Renode.Peripherals.SPI
 
         private void TryTransmitData()
         {
-            this.Log(LogLevel.Error, "TryTransmitData {0} {1} {2}",peripheralEnabled.Value,startTransmission.Value,transmitFifo.Count);
+            
             if(!peripheralEnabled.Value || !startTransmission.Value || transmitFifo.Count == 0)
             {
+                //this.Log(LogLevel.Warning, "TryTransmitData: early exit");
                 return;
             }
+            this.Log(LogLevel.Debug, "TryTransmitData: peripheralEnabled {0} startTransmission {1} transmitFifo.Count {2}", peripheralEnabled.Value, startTransmission.Value, transmitFifo.Count);
 
             // This many bytes are needed to hold all of the packet bits (using ceiling division)
             // The value of the register is one less that the amount of required bits
             var byteCount = (int)packetSizeBits.Value / 8 + 1;
             var bytes = new byte[MaxPacketBytes];
             var reverseBytes = BitConverter.IsLittleEndian && !leastSignificantByteFirst.Value;
+
+            this.Log(LogLevel.Warning, "TryTransmitData: byteCount {0} transmitFifo.Count {1}", byteCount, transmitFifo.Count);
 
             while(transmitFifo.Count != 0)
             {
@@ -361,8 +382,13 @@ namespace Antmicro.Renode.Peripherals.SPI
 
                 for(var i = 0; i < byteCount; i++)
                 {
+                    this.Log(LogLevel.Debug, "TryTransmitData: bytes[{0}] TX 0x{1:X}", i, bytes[i]);
                     bytes[i] = RegisteredPeripheral?.Transmit(bytes[i]) ?? 0;
+                    this.Log(LogLevel.Debug, "TryTransmitData: bytes[{0}] RX 0x{1:X}", i, bytes[i]);
                 }
+
+                this.Log(LogLevel.Debug, "TryTransmitData: setting DMATransmit.Unset()");
+                DMATransmit.Unset();
 
                 receiveFifo.Enqueue(BitHelper.ToUInt32(bytes, 0, byteCount, reverseBytes));
 
@@ -371,45 +397,77 @@ namespace Antmicro.Renode.Peripherals.SPI
                     // This blink is used to signal the DMA that it should perform the peripheral -> memory transaction now
                     // Without this signal DMA will never move data from the receive FIFO to memory
                     // See STM32DMA:OnGPIO
-                    DMARecieve.Blink();
+                    DMAReceive.Blink();
                 }
                 transmittedPackets++;
             }
+            this.Log(LogLevel.Debug, "TryTransmitData: after TX: transmissionSize {0} transmittedPackets {1}", transmissionSize.Value, transmittedPackets);
 
-            if(transmissionSize.Value == 0)
+            // In case the transmission size is not specified transmission ends
+            // if there are no more packets in the queue
+            if(transmittedPackets == transmissionSize.Value || transmissionSize.Value == 0)
             {
-                // [Transaction handling, p. 1621](https://www.st.com/resource/en/reference_manual/rm0493-multiprotocol-wireless-bluetooth-lowenergy-and-ieee802154-stm32wba5xxx-armbased-32bit-mcus-stmicroelectronics.pdf)
-                // SPI operates in endless transaction mode, which means that the SPI peripheral is not able to detect when a transaction completes.
-                // CSTART flag is not reset automatically and we don't call FinishTransmission().
-                // To reset CSTART and de-assert CS pin, CSUSP (master suspend request) flag should be set.
-            }
-            else if(transmittedPackets == transmissionSize.Value)
-            {
-                EndTransfer();
+                this.Log(LogLevel.Debug, "TryTransmitData: transmissionSize {0} transmittedPackets {1}", transmissionSize.Value, transmittedPackets);
+
+                // Calling the peripheral FinishTransmission here can
+                // lose device model state when doing
+                // multi-transaction operations when software is
+                // managing the chip-select signals. The peripheral
+                // FinishTransmission() should only happen when the
+                // chip-select is being released.
+		if(!softwareManagement.Value)
+		{
+		    this.Log(LogLevel.Debug, "TryTransmitData: FinishTransmission()");
+		    RegisteredPeripheral?.FinishTransmission();
+		}
+
+                endOfTransfer.Value = true;
+                startTransmission.Value = false;
             }
 
             UpdateInterrupts();
         }
 
-        private void EndTransfer()
-        {
-            RegisteredPeripheral?.FinishTransmission();
-            endOfTransfer.Value = true;
-            startTransmission.Value = false;
-        }
-
         private void UpdateInterrupts()
         {
+            if(transmitDMAEnabled.Value &&  endOfTransfer.Value )
+            {
+                //endOfTransferInterruptEnable.Value = transmitDMAEnabled.Value;
+                //transmitFifoThresholdInterruptEnable.Value = transmitDMAEnabled.Value;
+            }
+
             var rxp = receiveFifo.Count > 0 && receiveFifoThresholdInterruptEnable.Value;
-            var eot = (endOfTransfer.Value || suspensionStatus.Value) && endOfTransferInterruptEnable.Value;
+            var eot = endOfTransfer.Value && endOfTransferInterruptEnable.Value;
+
+            this.Log(LogLevel.Debug, "UpdateInterrupts: receiveFifo.Count {0} endOfTransfer {1} endOfTransferInterruptEnable {2}", receiveFifo.Count, endOfTransfer.Value, endOfTransferInterruptEnable.Value);
+            this.Log(LogLevel.Debug, "UpdateInterrupts: rxp {0} eot {1} transmitFifoThresholdInterruptEnable {2}", rxp, eot, transmitFifoThresholdInterruptEnable.Value);
+
+            // TODO: ADD: sequence to indicate DMA transmission (see STM32SPI_Fixed.cs): DMATransmit.Unset(); DMATransmit.Set();
+            this.Log(LogLevel.Debug, "UpdateInterrupts: transmitDMAEnabled {0} receiveDMAEnabled {1}", transmitDMAEnabled.Value, receiveDMAEnabled.Value);
+            if(transmitDMAEnabled.Value)
+            {
+                this.Log(LogLevel.Debug, "Update: DMATransmit {0} IsSet {1}", DMATransmit, DMATransmit.IsSet);
+                if(!DMATransmit.IsSet)
+                {
+                    this.Log(LogLevel.Debug, "UpdateInterrupts: transmitDMAEnable and TXE so triggering DMATransmit.Set()");
+                    DMATransmit.Unset(); // clear any previous stale state prior to:
+                    DMATransmit.Set(); // indicate DMA can perform M2P
+                    //IRQ.Set(!endOfTransfer.Value);
+                }
+            }
+            else
+            {
+                DMATransmit.Unset();
+            }
 
             var irqValue = transmitFifoThresholdInterruptEnable.Value || rxp || eot;
-            this.Log(LogLevel.Debug, "Setting IRQ to {0}", irqValue);
+            this.Log(LogLevel.Debug, "Setting IRQ to {0} eot = {1} {2}", irqValue, eot,endOfTransfer.Value);
             IRQ.Set(irqValue);
         }
 
         private void ResetTransmissionState()
         {
+            this.Log(LogLevel.Debug, "ResetTransmissionState");
             endOfTransfer.Value = false;
             startTransmission.Value = false;
             transmittedPackets = 0;
@@ -427,12 +485,13 @@ namespace Antmicro.Renode.Peripherals.SPI
         private IFlagRegisterField endOfTransfer;
         private IFlagRegisterField peripheralEnabled;
         private IFlagRegisterField receiveDMAEnabled;
+        private IFlagRegisterField transmitDMAEnabled;
         private IFlagRegisterField startTransmission;
         private IFlagRegisterField leastSignificantByteFirst;
+        private IFlagRegisterField softwareManagement;
 
         private IValueRegisterField transmissionSize;
         private IValueRegisterField packetSizeBits;
-        private IFlagRegisterField suspensionStatus;
 
         private ulong transmittedPackets;
 

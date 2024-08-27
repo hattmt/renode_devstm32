@@ -1,0 +1,263 @@
+
+
+cpu: CPU.CortexM @ sysbus
+    cpuType: "cortex-m7"
+    numberOfMPURegions: 16
+    nvic: nvic
+
+nvic: IRQControllers.NVIC @ sysbus 0xE000E000
+    -> cpu@0
+    priorityMask: 0xF0
+
+exti: IRQControllers.STM32H7_EXTI @ sysbus 0x58000000
+    [0-4] -> nvic@[6-10]
+    [5-9] -> nvicInput23@[0-4]
+    [10-15] -> nvicInput40@[0-5]
+    [16-19] -> nvic@[1, 41, 2, 3]
+    [20, 21] -> nvicInput137@[0-1]
+    [22-24] -> nvic@[31, 33, 72]
+    [26-29] -> nvic@[37-39, 71]
+    [30-33] -> nvic@[52, 53, 82, 83]
+    [34-35] -> nvicInput142@[0-1]
+    [36-40] -> nvic@[35, 36, 51, 84, 85]
+    41 -> nvicInput86@0
+    [42-44] -> nvic@[119, 76, 100]
+    [47, 48, 50, 52, 53] -> nvic@[93, 138-141]
+    54 -> nvic@115
+    [55-60] -> nvicInput149@[0-5]
+    [61-64] -> nvic@[5, 95, 96, 142]
+    65 -> nvicInput86@1
+    [66-73] -> nvic@[129-136]
+    [74-76] -> nvic@[128, 127, 146]
+    [85, 86] -> nvic@[94, 61]
+
+//video
+ltdc: Video.STM32LTDC_STM32H7 @ sysbus 0x50001000
+    -> nvic@88
+
+//DMAS
+
+dma2d: DMA.STM32DMA2D @ sysbus 0x52001000
+    -> nvic@90
+
+dmamux1: DMA.STM32H7_DMAMUX @ sysbus <0x40020800, +0x0400>
+    numberOfOutRequestChannels: 16
+    numberOfSynchronisationInputs: 8
+    // TODO: DMAMUX1 channels 0..7  connected to DMA1 channels 0..7
+    [0-7] -> dma1@[0-7]
+    // TODO: DMAMUX1 channels 8..15 connected to DMA2 channels 0..7
+    [8-15] -> dma2@[0-7]
+
+dmamux2: DMA.STM32H7_DMAMUX @ sysbus <0x58025800, +0x0400>
+    numberOfOutRequestChannels: 8
+    numberOfRequestTriggerInputs: 32
+    numberOfSynchronisationInputs: 32
+    // NOTE: RM0468 rev3 Table117 and RM0433 rev7 Table120 say numberOfSynchronisationInputs 16 but respective Table123 and Table126 show 32 inputs
+    // TODO: DMAMUX2 channels 0..7 connected to BDMA channels 0..7
+    //[0-7] -> bdma@[0-7] // TODO: Error E12: Type 'Antmicro.Renode.Peripherals.DMA.STM32LDMA' does not implement IGPIOReceiver and cannot be a destination of interrupts.
+
+dma2: DMA.STM32DMA_Fixed @ sysbus 0x40020400
+    [0-7] -> nvic@[56-60, 68-70]
+
+dma1: DMA.STM32DMA_Fixed @ sysbus 0x40020000
+    [0-7] -> nvic@[11-17, 47]
+
+bdma: DMA.STM32LDMA @ sysbus 0x58025400
+    [0-7] -> exti@[66-73]
+
+
+
+syscfg: Miscellaneous.STM32_SYSCFG @ sysbus 0x58000400
+    [0-15] -> exti@[0-15]
+
+
+nvicInputADC: Miscellaneous.CombinedInput @ none
+    numberOfInputs: 2
+    -> nvic@18
+
+//Inputs
+nvicInput23: Miscellaneous.CombinedInput @ none
+    numberOfInputs: 5
+    -> nvic@23
+
+nvicInput40: Miscellaneous.CombinedInput @ none
+    numberOfInputs: 6
+    -> nvic@40
+
+nvicInput86: Miscellaneous.CombinedInput @ none
+    numberOfInputs: 2
+    -> nvic@86
+
+nvicInput137: Miscellaneous.CombinedInput @ none
+    numberOfInputs: 2
+    -> nvic@137
+
+nvicInput142: Miscellaneous.CombinedInput @ none
+    numberOfInputs: 2
+    -> nvic@142
+
+nvicInput149: Miscellaneous.CombinedInput @ none
+    numberOfInputs: 6
+    -> nvic@149
+
+
+//Timers
+timer4: Timers.STM32_Timer @ sysbus 0x40000800
+    initialLimit: 0xffff
+    frequency: 48000000000
+    -> nvic@30
+
+timer2: Timers.STM32_Timer @ sysbus 0x40000000
+    initialLimit: 0xffff
+    frequency: 48000000000
+    -> nvic@28
+
+timer17: Timers.STM32_Timer @ sysbus 0x40014800
+    initialLimit: 0xffff
+    frequency: 48000000000
+    -> nvic@118
+
+//ADCS
+adc1: Analog.STM32G474_ADC @ sysbus 0x40022000
+    referenceVoltage: 3.3
+    externalEventFrequency: 1000
+    -> nvic@18
+
+adc2: Analog.STM32G474_ADC @ sysbus 0x40022100
+    referenceVoltage: 3.3
+    externalEventFrequency: 1000
+    -> nvic@18
+
+adc3: Analog.STM32G474_ADC @ sysbus 0x58026000
+    referenceVoltage: 3.3
+    externalEventFrequency: 1000
+    -> nvic@18
+
+//Memories
+dtcm: Memory.MappedMemory @ sysbus 0x20000000
+    size: 0x00020000
+
+backupSram: Memory.MappedMemory @ sysbus 0x38800000
+    size: 0x1000
+
+
+//GPIOS
+
+gpioa: GPIOPort.STM32_GPIOPort @ sysbus <0x58020000, +0x400>
+
+gpiob: GPIOPort.STM32_GPIOPort @ sysbus <0x58020400, +0x400>
+
+gpioc: GPIOPort.STM32_GPIOPort @ sysbus <0x58020800, +0x400>
+
+gpiod: GPIOPort.STM32_GPIOPort @ sysbus <0x58020c00, +0x400>
+
+gpioe: GPIOPort.STM32_GPIOPort @ sysbus <0x58021000, +0x400>
+
+gpiof: GPIOPort.STM32_GPIOPort @ sysbus <0x58021400, +0x400>
+
+gpiog: GPIOPort.STM32_GPIOPort @ sysbus <0x58021800, +0x400>
+
+gpioh: GPIOPort.STM32_GPIOPort @ sysbus <0x58021c00, +0x400>
+
+gpioi: GPIOPort.STM32_GPIOPort @ sysbus <0x58022000, +0x400>
+
+gpioj: GPIOPort.STM32_GPIOPort @ sysbus <0x58022400, +0x400>
+
+gpiok: GPIOPort.STM32_GPIOPort @ sysbus <0x58022800, +0x400>
+
+
+//I2c
+
+i2c1: I2C.STM32F7_I2C_Fixed @ sysbus 0x40005400
+    EventInterrupt->nvic@31
+    ErrorInterrupt->nvic@32
+
+i2c2: I2C.STM32F7_I2C_Fixed @ sysbus 0x40005800
+    EventInterrupt->nvic@33
+    ErrorInterrupt->nvic@34
+
+//spi
+spi3: SPI.STM32H7_SPI_Fixed @ sysbus 0x40003C00
+    IRQ->nvic@51
+
+spi1: SPI.STM32H7_SPI_Fixed @ sysbus 0x40013000
+    IRQ->nvic@35
+
+//CAN
+fdcan1: CAN.MCAN @ sysbus 0x4000A000
+    messageRAM: canMessageRAM
+
+fdcan2: CAN.MCAN @ sysbus 0x4000A400
+    messageRAM: canMessageRAM
+
+canMessageRAM: Memory.ArrayMemory @ sysbus <0x4000AC00, +0x2800>
+    size: 0x2800
+
+
+//UARTS
+
+usart1: UART.STM32F7_USART @ sysbus 0x40011000
+    IRQ->nvic@37
+    frequency: 921600
+
+usart2: UART.STM32F7_USART @ sysbus 0x40004400
+    IRQ -> exti@27
+    frequency: 921600
+
+usart3: UART.STM32F7_USART @ sysbus 0x40004800
+    IRQ -> exti@28
+    frequency: 921600
+
+uart4: UART.STM32F7_USART @ sysbus 0x40004C00
+    IRQ -> exti@30
+    frequency: 921600
+
+uart5: UART.STM32F7_USART @ sysbus 0x40005000
+    IRQ -> exti@31
+    frequency: 921600
+
+usart6: UART.STM32F7_USART @ sysbus 0x40011400
+    IRQ -> exti@29
+    frequency: 921600
+
+uart7: UART.STM32F7_USART @ sysbus 0x40007800
+    frequency: 921600
+
+
+rng: Miscellaneous.STM32F4_RNG @ sysbus 0x48021800
+    ->nvic@80
+
+//Clocks
+rtc: Timers.STM32F4_RTC @ sysbus 0x58004000
+    AlarmIRQ->nvic@41
+
+rcc: Miscellaneous.STM32H7B0_RCC @ sysbus 0x58024400
+    rtcPeripheral :true
+
+
+crypto: Miscellaneous.Crypto.STM32H7_CRYPTO @ sysbus 0x48021000
+    -> nvic@79
+
+hsem: Miscellaneous.STM32H7_HardwareSemaphore @ sysbus 0x58026400
+
+watchdog: Timers.STM32_IndependentWatchdog @ sysbus 0x58004800
+    frequency: 56000
+
+//PWR
+pwrVosRdy: Python.PythonPeripheral @ sysbus 0x58024818
+    size: 0x4
+    initable: false
+    //  Bit 13 - D3CR.VOSRDY
+    script: "request.value = 0x2000"
+
+pwrdpb: Python.PythonPeripheral @ sysbus 0x58024800
+    size: 0x4
+    initable: false
+    //  Bit 13 - D3CR.VOSRDY
+    script: "request.value = 1 << 8"
+
+
+sysbus:
+    init:
+        Tag <0x40080000, 0x400BFFFF> "USB2_OTG_FS:RESET" 0x80000000
+        Tag <0x40040000, 0x4007FFFF> "USB1_OTG_HS:RESET" 0x80000000

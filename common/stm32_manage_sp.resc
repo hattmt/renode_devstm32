@@ -1,0 +1,5 @@
+:a appeler qu une fois les .hex chargés
+set flash_sp `sysbus ReadDoubleWord 0x08000000`
+set flash_pc `sysbus ReadDoubleWord 0x08000004`
+cpu SP $flash_sp
+cpu PC $flash_pc

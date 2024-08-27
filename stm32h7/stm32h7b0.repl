@@ -1,0 +1,80 @@
+//Memories
+flashController: MTD.STM32H7_FlashController @ sysbus 0x52002000
+    flash1: flash1
+    flash2: flash2
+
+flash1: Memory.MappedMemory @ sysbus 0x08000000
+    size: 0x00020000
+
+flash2: Memory.MappedMemory @ sysbus 0x90000000
+    size: 0x10000000
+
+ram1: Memory.MappedMemory @ sysbus 0x1FF00000
+    size: 0x20000
+
+ram2: Memory.MappedMemory @ sysbus 0x24000000
+    size: 0x00080000
+
+ram3: Memory.MappedMemory @ sysbus 0x24080000
+    size: 0x00080000
+
+
+
+crc: CRC.STM32_CRC @ sysbus 0x40023000
+    series : STM32Series.F4
+    configurablePoly: true
+
+
+/*Simu Python de l'OTFDEC*/
+otfdec: Python.PythonPeripheral @ sysbus 0x5200B800
+    size: 0x400
+    initable: true
+    script: '''
+
+if request.isRead:
+    key = 139 # crc de la cle OTFDEC
+    if request.offset == 0x20: #region 1
+        request.value = ( key << 8 )
+    if request.offset == 0x50: #region 2
+        request.value = ( key << 8 )
+    if request.offset == 0x80: #region 3
+        request.value = ( key << 8 )
+    if request.offset == 0x110: #region 4
+        request.value = ( key << 8 )
+'''
+
+
+/*Simu Python de l'USB*/
+usb1_otg_hs: Python.PythonPeripheral @ sysbus 0x40040000
+    size: 0x400
+    initable: true
+    script: '''
+
+if request.isRead:
+    if request.offset == 0x10:
+        request.value = ( 0x1 << 31 )
+'''
+
+
+/*Simu Python de l'OSPI (la flash externe mappee directe)*/
+ospi: Python.PythonPeripheral @ sysbus 0x52005000
+    size: 0x1000
+    initable: true
+    script: '''
+if request.isInit:
+   lastVal = 0
+   data = {'tc': 1, 'tf': 1 ,'other':0}
+
+if request.isWrite:
+    if request.offset == 0x0:
+        # HSION [doc = "Bit 0 - HSI16 clock enable"]
+        data['other'] = (request.value >> 0) & 0x1
+    elif request.offset == 0x20:
+        data['tf'] = (request.value >> 3) & 0x1
+        data['tc'] = (request.value >> 1) & 0x1
+elif request.isRead:
+    if request.offset == 0x0:
+        request.value = ( 0x1 |  0x3 << 28 )
+    elif request.offset == 0x20:
+        request.value = ( data['tf'] << 3 | data['tc'] << 1 | 1 << 2 )
+'''

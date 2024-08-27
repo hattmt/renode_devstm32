@@ -177,8 +177,16 @@ namespace Antmicro.Renode.Peripherals.SPI
             currentOperation.State = DecodedOperation.OperationState.HandleCommand;
             switch(firstByte)
             {
+                case (byte)Commands.ResetEnable:
+                case (byte)Commands.ResetMemory:
+                case (byte)Commands.Empty:
+                        statusRegister.Reset();
+                        flagStatusRegister.Reset();
+                        this.Log(LogLevel.Noisy, "Reset Memory");
+                    return;
                 case (byte)Commands.ReadID:
                 case (byte)Commands.MultipleIoReadID:
+                case (byte)0x31:
                     currentOperation.Operation = DecodedOperation.OperationType.ReadID;
                     break;
                 case (byte)Commands.FastRead:
@@ -225,6 +233,12 @@ namespace Antmicro.Renode.Peripherals.SPI
                     currentOperation.AddressLength = numberOfAddressBytes.Value ? 3 : 4;
                     currentOperation.State = DecodedOperation.OperationState.AccumulateNoDataCommandAddressBytes;
                     break;
+                case (byte)Commands.SubsectorErase4kb:
+                        currentOperation.Operation = DecodedOperation.OperationType.Erase;
+                        currentOperation.EraseSize = DecodedOperation.OperationEraseSize.Sector;
+                        currentOperation.AddressLength = numberOfAddressBytes.Value ? 3 : 4;
+                        currentOperation.State = DecodedOperation.OperationState.AccumulateNoDataCommandAddressBytes;
+                   break;
                 case (byte)Commands.DieErase:
                     currentOperation.Operation = DecodedOperation.OperationType.Erase;
                     currentOperation.EraseSize = DecodedOperation.OperationEraseSize.Die;
@@ -491,7 +505,7 @@ namespace Antmicro.Renode.Peripherals.SPI
         private uint temporaryNonVolatileConfiguration; //this should be an ushort, but due to C# type promotions it's easier to use uint
 
         private readonly byte[] deviceData;
-        private readonly int SegmentSize = 64.KB();
+        private readonly int SegmentSize = 4.KB();
         private readonly IFlagRegisterField enable;
         private readonly ByteRegister statusRegister;
         private readonly ByteRegister flagStatusRegister;
@@ -503,8 +517,8 @@ namespace Antmicro.Renode.Peripherals.SPI
 
         private const byte EmptySegment = 0xff;
         private const byte ManufacturerID = 0x20;
-        private const byte RemainingIDBytes = 0x10;
-        private const byte MemoryType = 0xBB;           // device voltage: 1.8V
+        private const byte RemainingIDBytes = 0x20;
+        private const byte MemoryType = 0xBA;           // device voltage: 1.8V
         private const byte DeviceConfiguration = 0x0;   // standard
         private const byte DeviceGeneration = 0x1;      // 2nd generation
         private const byte ExtendedDeviceID = DeviceGeneration << 6;
@@ -514,6 +528,7 @@ namespace Antmicro.Renode.Peripherals.SPI
             // Software RESET Operations
             ResetEnable = 0x66,
             ResetMemory = 0x99,
+            Empty = 0xFF,
 
             // READ ID Operations
             ReadID = 0x9F,

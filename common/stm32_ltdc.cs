@@ -126,8 +126,15 @@ namespace Antmicro.Renode.Peripherals.Video
             lineInterruptEnableFlag = interruptEnableRegister.DefineFlagField(0, name: "LIE");
 
             var interruptClearRegister = new DoubleWordRegister(this);
-            interruptClearRegister.DefineFlagField(0, FieldMode.Write, name: "CLIF", writeCallback: (old, @new) => { if(@new) IRQ.Unset(); });
-            interruptClearRegister.DefineFlagField(3, FieldMode.Write, name: "CRRIF", writeCallback: (old, @new) => { if(@new) IRQ.Unset(); });
+            interruptClearRegister.DefineFlagField(0, FieldMode.Write, name: "CLIF", writeCallback: (_, @new) =>
+            {
+                if(!@new) return;
+                lineInterruptFlag.Value = false;
+                UpdateInterrupts();
+            });
+
+            var interruptStatusRegister = new DoubleWordRegister(this);
+            lineInterruptFlag = interruptStatusRegister.DefineFlagField(0, FieldMode.Read, name: "LIF");
 
             lineInterruptPositionConfigurationRegister = new DoubleWordRegister(this).WithValueField(0, 11, name: "LIPOS");
 
@@ -137,6 +144,7 @@ namespace Antmicro.Renode.Peripherals.Video
                 { (long)Register.ActiveWidthConfigurationRegister, activeWidthConfigurationRegister },
                 { (long)Register.BackgroundColorConfigurationRegister, backgroundColorConfigurationRegister },
                 { (long)Register.InterruptEnableRegister, interruptEnableRegister },
+                { (long)Register.InterruptStatusRegister, interruptStatusRegister },
                 { (long)Register.LTDC_GCR, new DoubleWordRegister(this)
                     .WithValueField(0, 1, name: "LTDCEN")
                     .WithReservedBits(1, 3)
@@ -152,13 +160,6 @@ namespace Antmicro.Renode.Peripherals.Video
                     .WithValueField(29, 1, name: "DEPOL")
                     .WithValueField(30, 1, name: "VSPOL")
                     .WithValueField(31, 1, name: "HSPOL")
-                },
-                { (long)Register.LTDC_ISR, new DoubleWordRegister(this)
-                    .WithValueField(0, 1, name: "LIF")
-                    .WithValueField(1, 1, name: "FUIF")
-                    .WithValueField(2, 1, name: "TERRIF")
-                    .WithValueField(3, 1, name: "RRIF")
-                    .WithReservedBits(4, 28)
                 },
                 { (long)Register.InterruptClearRegister, interruptClearRegister },
                 { (long)Register.LineInterruptPositionConfigurationRegister, lineInterruptPositionConfigurationRegister },
@@ -248,10 +249,8 @@ namespace Antmicro.Renode.Peripherals.Video
                     (byte)layer[1].ConstantAlphaConfigurationRegister.Value,
                     layer[1].blendingFactor1.Value == BlendingFactor1.Multiply ? PixelBlendingMode.Multiply : PixelBlendingMode.NoModification);
 
-                if(lineInterruptEnableFlag.Value)
-                {
-                    IRQ.Set();
-                }
+                lineInterruptFlag.Value = true;
+                UpdateInterrupts();
             }
         }
 
@@ -293,6 +292,11 @@ namespace Antmicro.Renode.Peripherals.Video
             }
         }
 
+        private void UpdateInterrupts()
+        {
+            IRQ.Set(lineInterruptEnableFlag.Value && lineInterruptFlag.Value);
+        }
+
         private readonly IValueRegisterField accumulatedVerticalBackPorchField;
         private readonly IValueRegisterField accumulatedHorizontalBackPorchField;
         private readonly IValueRegisterField accumulatedActiveHeightField;
@@ -301,6 +305,7 @@ namespace Antmicro.Renode.Peripherals.Video
         private readonly IValueRegisterField backgroundColorGreenChannelField;
         private readonly IValueRegisterField backgroundColorRedChannelField;
         private readonly IFlagRegisterField lineInterruptEnableFlag;
+        private readonly IFlagRegisterField lineInterruptFlag;
         private readonly DoubleWordRegister lineInterruptPositionConfigurationRegister;
         private readonly Layer[] layer;
         private readonly DoubleWordRegisterCollection registers;
@@ -332,7 +337,7 @@ namespace Antmicro.Renode.Peripherals.Video
             LTDC_SRCR = 0x024,
             BackgroundColorConfigurationRegister = 0x2C,
             InterruptEnableRegister = 0x34,
-            LTDC_ISR = 0x38,
+            InterruptStatusRegister = 0x38,
             InterruptClearRegister = 0x3C,
             LineInterruptPositionConfigurationRegister = 0x40,
             LTDC_CDSR = 0x48,

@@ -1,0 +1,10 @@
+machine LoadPlatformDescription $lib_path\stm32h7\common\stm32h7.repl
+
+i $lib_path\stm32h7\peripherals\stm32h7_rcc.cs
+i $lib_path\stm32h7\peripherals\dmamux.cs
+
+i $lib_path\common\stm32_adc.cs
+i $lib_path\common\stm32_ltdc.cs
+i $lib_path\common\stm32_spi.cs
+i $lib_path\common\stm32_dma.cs
+i $lib_path\common\stm32_i2c.cs
