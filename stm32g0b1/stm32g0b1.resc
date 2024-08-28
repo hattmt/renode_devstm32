@@ -1,35 +1,4 @@
-:name: STM32G0B1
+i $lib_path\stm32g0b1\STM32G0B1_ADC.cs
+i $lib_path\stm32g0b1\STM32G0B1_RCC.cs
 
-using sysbus
-$name?="STM32G0B1"
-mach create $name
-
-emulation CreateCANHub "canHub"
-
-
-i @STM32G0B1_ADC.cs
-i @STM32G0B1_RCC.cs
-
-machine LoadPlatformDescription @stm32g0b1.repl
-
-connector Connect sysbus.fdcan1 canHub
-
-
-
-sysbus LoadELF  @file.axf
-
-:uncomment following lines if armclang build and change offsets
-:sysbus.cpu PC 0x080000d1
-:sysbus.cpu SP 0x20016970
-:sysbus.cpu VectorTableOffset 0x8000000
-
-:adc WriteWordUsingDword 0x4 0x2000
-
-showAnalyzer sysbus.usart3
-
-
-:sysbus.gpiod OnGPIO 7 True
-:sysbus.gpiod OnGPIO 9 True
-
-: debug with vscode and gdb client on localhost:3333
-machine StartGdbServer  3333 True
+machine LoadPlatformDescription $lib_path\stm32g0b1\stm32g0b1.repl
