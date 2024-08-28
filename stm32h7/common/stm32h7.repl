@@ -121,17 +121,17 @@ timer17: Timers.STM32_Timer @ sysbus 0x40014800
 adc1: Analog.STM32G474_ADC @ sysbus 0x40022000
     referenceVoltage: 3.3
     externalEventFrequency: 1000
-    -> nvic@18
+    IRQ-> nvic@18
 
 adc2: Analog.STM32G474_ADC @ sysbus 0x40022100
     referenceVoltage: 3.3
     externalEventFrequency: 1000
-    -> nvic@18
+    IRQ-> nvic@18
 
 adc3: Analog.STM32G474_ADC @ sysbus 0x58026000
     referenceVoltage: 3.3
     externalEventFrequency: 1000
-    -> nvic@18
+    IRQ-> nvic@18
 
 //Memories
 dtcm: Memory.MappedMemory @ sysbus 0x20000000
