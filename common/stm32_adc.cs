@@ -70,6 +70,7 @@ namespace Antmicro.Renode.Peripherals.Analog
                 }
             }
 
+            DMAReceive = new GPIO();
             this.machine = machine;
 
             bool calibration = hasCalibration.Value;
@@ -128,6 +129,8 @@ namespace Antmicro.Renode.Peripherals.Analog
             for(var i = 0; i < repeat; i++)
             {
                 sampleProvider[channel].FeedSample(sample);
+                DMAReceive.Set();
+                DMAReceive.Blink();
             }
         }
 
@@ -137,6 +140,8 @@ namespace Antmicro.Renode.Peripherals.Analog
             {
                 ValidateChannel(channel.Value);
                 sampleProvider[channel.Value].DefaultSample.Value = valueInmV;
+                DMAReceive.Set();
+                DMAReceive.Blink();
                 return;
             }
             for(var i = 0; i < ChannelCount; i++)
@@ -152,6 +157,7 @@ namespace Antmicro.Renode.Peripherals.Analog
             {
                 channelSelected[i] = false;
             }
+            DMAReceive.Unset();
             currentChannel = 0;
             awaitingConversion = false;
             enabled = false;
@@ -174,6 +180,7 @@ namespace Antmicro.Renode.Peripherals.Analog
         public DoubleWordRegisterCollection RegistersCollection { get => registers; }
         public long Size => 0xD0;
         public GPIO IRQ { get; }
+        public GPIO DMAReceive { get; }
 
         private void ValidateChannel(int channel)
         {
@@ -195,6 +202,7 @@ namespace Antmicro.Renode.Peripherals.Analog
             var endOfSequence = endOfSequenceFlag.Value && endOfSequenceInterruptEnable.Value;
 
             IRQ.Set(adcReady || analogWatchdog || endOfSampling || endOfConversion || endOfSequence);
+            this.Log(LogLevel.Warning, "IRQ SET {0}",adcReady || analogWatchdog || endOfSampling || endOfConversion || endOfSequence);
         }
 
         private void StartSampling()
@@ -263,8 +271,10 @@ namespace Antmicro.Renode.Peripherals.Analog
                 else
                 {
                     data.Value = GetSampleFromChannel(currentChannel);
+                    
                     if(dmaEnabled.Value)
                     {
+                        this.Log(LogLevel.Debug, "dma receive");
                         SendDmaRequest();
                     }
                     endOfSamplingFlag.Value = true;
@@ -394,7 +404,7 @@ namespace Antmicro.Renode.Peripherals.Analog
 
             var configurationRegister1 = new DoubleWordRegister(this)
                 .WithFlag(0, out dmaEnabled, name: "DMAEN")
-                .WithTaggedFlag("DMACFG", 1)
+                .WithFlag(1, FieldMode.Read | FieldMode.Write, name:"DMACFG" )
                 // When fully configurable channel sequencer is available, the SCANDIR and RES fields are swapped
                 .WithEnumField<DoubleWordRegister, ScanDirection>(hasChannelSequence ? 4 : 2, 1, out scanDirection, name: "SCANDIR")
                 .WithEnumField<DoubleWordRegister, Resolution>(hasChannelSequence ? 2 : 3, 2, out resolution, name: "RES")
