@@ -349,7 +349,7 @@ namespace Antmicro.Renode.Peripherals.SPI
                     case Registers.CRCPolynomial:
                     case Registers.UnderrunData:
                         this.Log(LogLevel.Error, "Attempted to write 0x{0:X} to {0} register while peripheral is enabled", value, reg);
-                        ResetTransmissionState();
+                        //ResetTransmissionState();
                         return true;
                 }
             }
@@ -359,7 +359,7 @@ namespace Antmicro.Renode.Peripherals.SPI
 
         private void TryTransmitData()
         {
-            
+
             if(!peripheralEnabled.Value || !startTransmission.Value || transmitFifo.Count == 0)
             {
                 //this.Log(LogLevel.Warning, "TryTransmitData: early exit");

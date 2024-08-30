@@ -16,9 +16,6 @@ machine LoadPlatformDescription $lib_path\stm32h7\stm32h750.repl
 timer2 Frequency 480000000
 nvic Frequency 480000000
 
-:logLevel -1 sysbus.i2c1
-:logLevel -1 sysbus.i2c1.eeprom
-
 
 
 

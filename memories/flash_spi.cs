@@ -282,6 +282,8 @@ namespace Antmicro.Renode.Peripherals.SPI
                     currentOperation.Register = (uint)Register.EnhancedVolatileConfiguration;
                     break;
                 default:
+                    statusRegister.Reset();
+                    flagStatusRegister.Reset();
                     this.Log(LogLevel.Error, "Command decoding failed on byte: 0x{0:X} ({1}).", firstByte, (Commands)firstByte);
                     return;
             }
