@@ -129,9 +129,11 @@ namespace Antmicro.Renode.Peripherals.Analog
             for(var i = 0; i < repeat; i++)
             {
                 sampleProvider[channel].FeedSample(sample);
-                DMAReceive.Set();
+                DMAReceive.Unset();
                 DMAReceive.Blink();
             }
+          
+               
         }
 
         public void SetDefaultValue(decimal valueInmV, int? channel = null)
@@ -140,13 +142,15 @@ namespace Antmicro.Renode.Peripherals.Analog
             {
                 ValidateChannel(channel.Value);
                 sampleProvider[channel.Value].DefaultSample.Value = valueInmV;
-                DMAReceive.Set();
+                DMAReceive.Unset();
                 DMAReceive.Blink();
                 return;
             }
             for(var i = 0; i < ChannelCount; i++)
             {
                 sampleProvider[i].DefaultSample.Value = valueInmV;
+                DMAReceive.Unset();
+                DMAReceive.Blink();
             }
         }
 
@@ -290,7 +294,7 @@ namespace Antmicro.Renode.Peripherals.Analog
                             }
                         }
                     }
-                    endOfConversionFlag.Value = true;
+                   // endOfConversionFlag.Value = true;
                     UpdateInterrupts();
                     this.Log(LogLevel.Debug, "Sampled channel {0}", currentChannel);
                     SwitchToNextChannel();

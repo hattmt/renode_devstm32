@@ -8,6 +8,7 @@ cpu: CPU.CortexM @ sysbus
 nvic: IRQControllers.NVIC @ sysbus 0xE000E000
     -> cpu@0
     priorityMask: 0xF0
+    systickFrequency: 48000000000
 
 exti: IRQControllers.STM32H7_EXTI @ sysbus 0x58000000
     [0-4] -> nvic@[6-10]
@@ -103,17 +104,17 @@ nvicInput149: Miscellaneous.CombinedInput @ none
 
 //Timers
 timer4: Timers.STM32_Timer @ sysbus 0x40000800
-    initialLimit: 0xffff
+    initialLimit: 0xffffffff
     frequency: 48000000000
     -> nvic@30
 
 timer2: Timers.STM32_Timer @ sysbus 0x40000000
-    initialLimit: 0xffff
+    initialLimit: 0xffffffff
     frequency: 48000000000
     -> nvic@28
 
 timer17: Timers.STM32_Timer @ sysbus 0x40014800
-    initialLimit: 0xffff
+    initialLimit: 0xffffffff
     frequency: 48000000000
     -> nvic@118
 
@@ -246,18 +247,18 @@ watchdog: Timers.STM32_IndependentWatchdog @ sysbus 0x58004800
 //PWR
 pwrVosRdy: Python.PythonPeripheral @ sysbus 0x58024818
     size: 0x4
-    initable: false
+    initable: true
     //  Bit 13 - D3CR.VOSRDY
     script: "request.value = 0x2000"
 
+vosrdy: Python.PythonPeripheral @ sysbus 0x58024804
+    size: 0x4
+    initable: true
+    //  Bit 13 - D3CR.VOSRDY
+    script: "request.value = 1 << 13"
+
 pwrdpb: Python.PythonPeripheral @ sysbus 0x58024800
     size: 0x4
-    initable: false
-    //  Bit 13 - D3CR.VOSRDY
+    initable: true
+    // DBP
     script: "request.value = 1 << 8"
-
-
-sysbus:
-    init:
-        Tag <0x40080000, 0x400BFFFF> "USB2_OTG_FS:RESET" 0x80000000
-        Tag <0x40040000, 0x4007FFFF> "USB1_OTG_HS:RESET" 0x80000000
