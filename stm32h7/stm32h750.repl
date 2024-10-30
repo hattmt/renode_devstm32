@@ -4,7 +4,7 @@ flashController: MTD.STM32H7_FlashController @ sysbus 0x52002000
     flash2: flash1
 
 flash0: Memory.MappedMemory @ sysbus 0x08000000
-    size: 0x00020000
+    size: 0x00040000
 
 flash1: Memory.MappedMemory @ sysbus 0x90000000
     size: 0x10000000
@@ -24,31 +24,17 @@ fmc_ram: Memory.MappedMemory @ sysbus 0xC0000000
 
 
 crc: CRC.STM32_CRC @ sysbus 0x58024C00
-    series : STM32Series.F4
+    series : STM32Series.WBA
     configurablePoly: true
 
 
 
+
+
 /*Simu Python de l'USB*/
-usb1_otg_hs: Python.PythonPeripheral @ sysbus 0x40040000
-    size: 0x400
-    initable: true
-    script: '''
+usb1_otg_hs: Miscellaneous.USB_HOST @ sysbus 0x40040000
 
-if request.isRead:
-    if request.offset == 0x10:
-        request.value = ( 0x1 << 31 )
-'''
-
-usb1_otg_fs: Python.PythonPeripheral @ sysbus 0x40080000
-    size: 0x400
-    initable: true
-    script: '''
-
-if request.isRead:
-    if request.offset == 0x10:
-        request.value = ( 0x1 << 31 )
-'''
+usb1_otg_fs: Miscellaneous.USB_HOST @ sysbus 0x40080000
 
 
 /*Simu Python de l'QSPI (la flash externe mappee directe)*/
@@ -81,3 +67,12 @@ elif request.isRead:
         if idx > 0 :
             idx -= 1
 '''
+
+
+
+
+sysbus:
+    init:
+        //Tag <0x40080000, 0x400BFFFF> "USB2_OTG_FS:RESET" 0x80000000
+        //Tag <0x40040000, 0x4007FFFF> "USB1_OTG_HS:RESET" 0x80000000
+        ApplySVD @C:\ST\STM32CubeCLT_1.15.1\STMicroelectronics_CMSIS_SVD\STM32H750.svd

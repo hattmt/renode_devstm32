@@ -2,6 +2,7 @@ $lib_path?=@C:\projets\renode\renode_devstm32
 
 i $lib_path\stm32h7\peripherals\stm32h7_rcc.cs
 i $lib_path\stm32h7\peripherals\stm32h7_dmamux.cs
+i $lib_path\stm32h7\peripherals\USBHost.cs
 
 i $lib_path\common\stm32_adc.cs
 i $lib_path\common\stm32_ltdc.cs
@@ -13,9 +14,4 @@ machine LoadPlatformDescription $lib_path\stm32h7\common\stm32h7.repl
 machine LoadPlatformDescription $lib_path\stm32h7\stm32h750.repl
 
 :MAJ des frequences et choses à mettre à jour
-timer2 Frequency 480000000
 nvic Frequency 480000000
-
-
-
-
