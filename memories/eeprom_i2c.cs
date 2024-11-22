@@ -39,18 +39,18 @@ namespace Antmicro.Renode.Peripherals.I2C
 
             if(data.Length <= 2 && command == false )
             {
-                
+
                 if( data.Length == 2 )
                 {
                     offset = ( data[0]&0xFF) << 8 | ( data[1]&0xFF) ;
-                    this.Log(LogLevel.Warning, "offset = {0} 0x{1} 0x{2}",offset,data[0],data[1] );
+                    this.Log(LogLevel.Noisy, "offset = {0} 0x{1} 0x{2}",offset,data[0],data[1] );
                 }
                 else
                 {
                    // offset = data[0]&0xFF;
-                    this.Log(LogLevel.Warning, "offset = {0} 0x{1} ",offset,data[0] );
+                    this.Log(LogLevel.Noisy, "offset = {0} 0x{1} ",offset,data[0] );
                 }
-                
+
                 command = true;
                 //offset += data.Length;
             }else
@@ -73,7 +73,7 @@ namespace Antmicro.Renode.Peripherals.I2C
             byte[] buf = underlyingMemory.ReadBytes(offset,count);
             //offset += buf.Length;
             this.Log(LogLevel.Noisy, "Read {0}", buf.Select(x => x.ToString("X")).Aggregate((x, y) => x + " " + y));
-            
+
             return buf;
         }
 

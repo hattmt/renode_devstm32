@@ -79,7 +79,7 @@ namespace Antmicro.Renode.Peripherals.SPI
         {
             //return registers.Read(offset);
             uint value = registers.Read(offset);
-            //this.Log(LogLevel.Debug, "ReadDoubleWord:  0x{0:X} value 0x{1:X}", offset, value);
+            this.Log(LogLevel.Debug, "ReadDoubleWord:  0x{0:X} value 0x{1:X}", offset, value);
             return value;
         }
 
@@ -209,9 +209,9 @@ namespace Antmicro.Renode.Peripherals.SPI
             Registers.InterruptEnable.Define(registers)
                 .WithFlag(0, out receiveFifoThresholdInterruptEnable, name: "RXPIE")
                 .WithFlag(1, out transmitFifoThresholdInterruptEnable, name: "TXPIE")
-                .WithTaggedFlag("DXPIE", 2)
+                .WithFlag(2,name:"DXPIE")
                 .WithFlag(3, out endOfTransferInterruptEnable, name: "EOTIE")
-                .WithTaggedFlag("TXTFIE", 4)
+                .WithFlag(4,name:"TXTFIE")
                 .WithFlag(5, name: "UDRIE")
                 .WithFlag(6, name: "OVRIE")
                 .WithFlag(7, name: "CRCEIE")
@@ -340,20 +340,6 @@ namespace Antmicro.Renode.Peripherals.SPI
         private bool CanWriteToRegister(Registers reg, uint value)
         {
             this.Log(LogLevel.Debug, "CanWriteToRegister: reg {0} value 0x{1:X} peripheralEnabled {2}", reg, value, peripheralEnabled.Value);
-            if(peripheralEnabled.Value)
-            {
-                switch(reg)
-                {
-                    case Registers.Configuration1:
-                    case Registers.Configuration2:
-                    case Registers.CRCPolynomial:
-                    case Registers.UnderrunData:
-                        this.Log(LogLevel.Error, "Attempted to write 0x{0:X} to {0} register while peripheral is enabled", value, reg);
-                        //ResetTransmissionState();
-                        return true;
-                }
-            }
-
             return true;
         }
 
@@ -430,7 +416,7 @@ namespace Antmicro.Renode.Peripherals.SPI
 
         private void UpdateInterrupts()
         {
-            if(transmitDMAEnabled.Value &&  endOfTransfer.Value )
+if(transmitDMAEnabled.Value &&  endOfTransfer.Value )
             {
                 //endOfTransferInterruptEnable.Value = transmitDMAEnabled.Value;
                 //transmitFifoThresholdInterruptEnable.Value = transmitDMAEnabled.Value;

@@ -162,7 +162,7 @@ namespace Antmicro.Renode.Peripherals.SPI
             var data = new byte[20];
             data[0] = ManufacturerID;
             data[1] = MemoryType;
-            data[2] = capacityCode;
+            data[2] = 0x18;//capacityCode;
             data[3] = RemainingIDBytes;
             data[4] = ExtendedDeviceID;
             data[5] = DeviceConfiguration;
