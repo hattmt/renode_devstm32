@@ -239,7 +239,7 @@ dmamux1: DMA.STM32H7_DMAMUX @ sysbus <0x40020800, +0x0400>
     // TODO: DMAMUX1 channels 8..15 connected to DMA2 channels 0..7
     [8-15] -> dma2@[0-7]
 
-dma1: DMA.STM32G0DMA @ sysbus 0x40020000
+dma1: DMA.STM32G4DMA @ sysbus 0x40020000
     [0-7] -> nvic@[11-17, 96]
     numberOfChannels:8
 

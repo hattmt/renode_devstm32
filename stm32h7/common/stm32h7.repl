@@ -7,7 +7,7 @@ cpu: CPU.CortexM @ sysbus
 
 nvic: IRQControllers.NVIC @ sysbus 0xE000E000
     -> cpu@0
-    priorityMask: 0xF0
+    priorityMask: 0x00F0
     systickFrequency: 48000000000
 
 exti: IRQControllers.STM32H7_EXTI @ sysbus 0x58000000
@@ -108,15 +108,25 @@ timer4: Timers.STM32_Timer @ sysbus 0x40000800
     frequency: 48000000000
     -> nvic@30
 
+timer6: Timers.STM32_Timer @ sysbus 0x40001000
+    initialLimit: 0xffffffff
+    frequency: 48000000000
+    -> nvic@54
+
+
 timer2: Timers.STM32_Timer @ sysbus 0x40000000
     initialLimit: 0xffffffff
     frequency: 48000000000
     -> nvic@28
 
+
+
 timer17: Timers.STM32_Timer @ sysbus 0x40014800
     initialLimit: 0xffffffff
     frequency: 48000000000
     -> nvic@118
+
+
 
 //ADCS
 adc1: Analog.STM32G474_ADC @ sysbus 0x40022000

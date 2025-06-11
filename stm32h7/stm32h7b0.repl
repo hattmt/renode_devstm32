@@ -13,15 +13,43 @@ ram1: Memory.MappedMemory @ sysbus 0x1FF00000
     size: 0x20000
 
 ram2: Memory.MappedMemory @ sysbus 0x24000000
-    size: 0x00080000
+    size: 0x01000000
 
-ram3: Memory.MappedMemory @ sysbus 0x24080000
-    size: 0x00080000
 
+FPB: Python.PythonPeripheral @ sysbus 0xE0002000
+    size: 0x1000
+    initable: true
+    script: '''
+
+if request.isRead:
+    if request.offset == 0x0: #region 1
+        request.value = 0
+'''
+
+
+DBGMCU_IDCODE: Python.PythonPeripheral @ sysbus 0x5C001000 
+    size: 0x1000
+    initable: true
+    script: '''
+
+if request.isRead:
+    if request.offset == 0x0: #region 1
+        request.value = 0x6BA00477
+'''
+
+DBGMCU: Python.PythonPeripheral @ sysbus 0xE0042000
+    size: 0x1000
+    initable: true
+    script: '''
+
+if request.isRead:
+    if request.offset == 0x0: #region 1
+        request.value =  0x6BA00477
+'''
 
 
 crc: CRC.STM32_CRC @ sysbus 0x40023000
-    series : STM32Series.F4
+    series : STM32Series.WBA
     configurablePoly: true
 
 

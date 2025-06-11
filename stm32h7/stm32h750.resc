@@ -15,3 +15,4 @@ machine LoadPlatformDescription $lib_path\stm32h7\stm32h750.repl
 
 :MAJ des frequences et choses à mettre à jour
 nvic Frequency 480000000
+timer17 Frequency 480000000
